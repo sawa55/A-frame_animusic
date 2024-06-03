@@ -5,15 +5,17 @@
     <script>
         AFRAME.registerComponent('audioanalyser', {
             schema: {
-                src: { type: 'selector' }
+                src: { type: 'selector' },
+                scaleFactor: { type: 'number', default: 12 }
             },
 
             init: function () {
                 var audioContext = this.el.sceneEl.audioListener.context;
                 var analyser = this.analyser = audioContext.createAnalyser();
-                analyser.fftSize = 512; // FFTサイズを設定
+                analyser.fftSize = 256; // FFTサイズを設定
                 this.data = new Uint8Array(analyser.frequencyBinCount);
-                console.log(this.data);
+                console.log(this.el.dataset.scaleFactor)
+                // var scaleFactor = this.el.getAttribute('audioanalyser').scaleFactor;
 
                 var sound = this.el.components.sound;
                 if (sound && sound.loaded) {
@@ -34,9 +36,13 @@
                 this.analyser.getByteFrequencyData(this.data);
                 var sum = this.data.reduce((a, b) => a + b, 0);
                 var average = sum / this.data.length;
-                var newScale = 1 + (average / 64) * 12; // 平均ボリュームに基づいてスケールを計算
+                var scaleFactor = this.schema.scaleFactor;
+                // console.log(this.schema)
+
+                var newScale = 1 + (average / 64) * this.el.dataset.scaleFactor; // 平均ボリュームに基づいてスケールを計算
                 this.el.setAttribute('scale', { x: newScale, y: newScale, z: newScale });
             }
+
         });
     </script>
     <script>
@@ -45,35 +51,35 @@
             document.addEventListener('keydown', function (event) {
                 if (event.key === 'c') {
                     var scene = document.querySelector('a-scene');
+                    var myAudio = document.getElementById('myAudio');
                     if (!audioStarted) {
-                        // AudioContextを再開
                         scene.audioListener.context.resume().then(() => {
                             console.log('AudioContext activated');
-                            // 音声を再生
-                            var soundComponent = document.querySelector('[sound]');
-                            soundComponent.components.sound.playSound();
+                            var soundComponents = document.querySelectorAll('[sound]');
+                            soundComponents.forEach(function (soundComponent) {
+                                soundComponent.components.sound.playSound();
+                            });
+                            myAudio.play();
                             audioStarted = true;
                         });
-                    } else {
-                        // 既にAudioContextが開始されている場合は、音声を再生
-                        var soundComponent = document.querySelector('[sound]');
-                        soundComponent.components.sound.playSound();
                     }
                 }
             });
         });
     </script>
+
 </head>
 
 <body>
+    <audio id="myAudio" src="Short.mp3" autoplay:true loop:true></audio>
     <a-scene>
-        <!-- <a-box position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
-        <a-sphere position="0 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
-        <a-cylinder position="1 0.75 -3" radius="0.5" height="1.5" color="#FFC65D"></a-cylinder>
-        <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane> -->
         <a-sky color="#ECECEC"></a-sky>
-        <a-box position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"
-            sound="src: url(bass.mp3); autoplay: true; loop: true" audioanalyser="src: a-sound"></a-box>
+        <a-box data-scale-factor="20" position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"
+            sound="src: url(bass.mp3); loop: true" audioanalyser="src: a-sound;"></a-box>
+        <a-box data-scale-factor="6" position="1 0.5 -6" rotation="0 45 0" color="#4CC3D9"
+            sound="src: url(hat.mp3); loop: true" audioanalyser="src: a-sound;"></a-box>
+        <a-box data-scale-factor="12" position="1 0.5 3" rotation="0 45 0" color="#4CC3D9"
+            sound="src: url(melody.mp3); loop: true" audioanalyser="src: a-sound;"></a-box>
     </a-scene>
 </body>
 
