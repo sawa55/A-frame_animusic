@@ -52,11 +52,23 @@
             var audioStarted = false;
             var scene = document.querySelector('a-scene');
             var myAudio = document.getElementById('myAudio');
+            var volumeControl = document.getElementById('volumeControl');
+            var soundComponents = document.querySelectorAll('[sound]');
+
+            volumeControl.addEventListener('input', function () {
+                var volume = this.value;
+                myAudio.volume = volume;
+                soundComponents.forEach(function (component) {
+                    component.components.sound.setVolume(volume);
+                });
+            });
+
+
             textElement.addEventListener('click', function (event) {
 
                 if (!audioStarted) {
                     scene.audioListener.context.resume().then(() => {
-                        var soundComponents = document.querySelectorAll('[sound]');
+
                         soundComponents.forEach(function (soundComponent) {
                             soundComponent.components.sound.playSound();
                         });
@@ -67,7 +79,7 @@
             });
             textstopElement.addEventListener('click', function (event) {
                 if (audioStarted) {
-                    var soundComponents = document.querySelectorAll('[sound]');
+
                     soundComponents.forEach(function (soundComponent) {
                         soundComponent.components.sound.stopSound();
                     });
@@ -85,6 +97,52 @@
 
 <body>
     <audio id="myAudio" src="Short.mp3" loop="true"></audio>
+    <input type="range" id="volumeControl" min="0" max="1" step="0.01" value="0.5"
+        style="position: fixed; top: 10px; left: 10px; width: 200px; background: black;z-index: 10;">
+    <style>
+        /* スライダーのトラック部分のスタイル */
+        #volumeControl::-webkit-slider-runnable-track {
+            background: black;
+        }
+
+        #volumeControl::-moz-range-track {
+            background: black;
+        }
+
+        #volumeControl::-ms-track {
+            background: black;
+        }
+
+        /* スライダーのサム部分のスタイル */
+        #volumeControl::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            /* デフォルトのスタイルを無効にする */
+            appearance: none;
+            height: 16px;
+            width: 16px;
+            background: black;
+            cursor: pointer;
+            /* ホバー時のカーソルをポインターにする */
+            border-radius: 50%;
+            /* 円形にする */
+        }
+
+        #volumeControl::-moz-range-thumb {
+            background: black;
+            height: 16px;
+            width: 16px;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        #volumeControl::-ms-thumb {
+            background: black;
+            height: 16px;
+            width: 16px;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+    </style>
     <a-scene>
         <a-sky color="#ECECEC"></a-sky>
         <a-box data-scale-factor="20" position="-4 0.5 -5" rotation="0 45 0" color="#4CC3D9"
