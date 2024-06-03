@@ -1,0 +1,80 @@
+<html>
+
+<head>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script>
+        AFRAME.registerComponent('audioanalyser', {
+            schema: {
+                src: { type: 'selector' }
+            },
+
+            init: function () {
+                var audioContext = this.el.sceneEl.audioListener.context;
+                var analyser = this.analyser = audioContext.createAnalyser();
+                analyser.fftSize = 512; // FFTサイズを設定
+                this.data = new Uint8Array(analyser.frequencyBinCount);
+                console.log(this.data);
+
+                var sound = this.el.components.sound;
+                if (sound && sound.loaded) {
+                    console.log("true")
+
+                    var source = sound.pool.children[0].getOutput(); // soundコンポーネントからAudioNodeを取得
+                    source.connect(analyser); // AudioNodeをAnalyserNodeに接続
+                } else {
+                    console.log("false")
+                    this.el.addEventListener('sound-loaded', () => {
+                        var source = sound.pool.children[0].getOutput();
+                        source.connect(analyser);
+                    });
+                }
+            },
+
+            tick: function () {
+                this.analyser.getByteFrequencyData(this.data);
+                var sum = this.data.reduce((a, b) => a + b, 0);
+                var average = sum / this.data.length;
+                var newScale = 1 + (average / 64) * 12; // 平均ボリュームに基づいてスケールを計算
+                this.el.setAttribute('scale', { x: newScale, y: newScale, z: newScale });
+            }
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var audioStarted = false;
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'c') {
+                    var scene = document.querySelector('a-scene');
+                    if (!audioStarted) {
+                        // AudioContextを再開
+                        scene.audioListener.context.resume().then(() => {
+                            console.log('AudioContext activated');
+                            // 音声を再生
+                            var soundComponent = document.querySelector('[sound]');
+                            soundComponent.components.sound.playSound();
+                            audioStarted = true;
+                        });
+                    } else {
+                        // 既にAudioContextが開始されている場合は、音声を再生
+                        var soundComponent = document.querySelector('[sound]');
+                        soundComponent.components.sound.playSound();
+                    }
+                }
+            });
+        });
+    </script>
+</head>
+
+<body>
+    <a-scene>
+        <!-- <a-box position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
+        <a-sphere position="0 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
+        <a-cylinder position="1 0.75 -3" radius="0.5" height="1.5" color="#FFC65D"></a-cylinder>
+        <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane> -->
+        <a-sky color="#ECECEC"></a-sky>
+        <a-box position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"
+            sound="src: url(bass.mp3); autoplay: true; loop: true" audioanalyser="src: a-sound"></a-box>
+    </a-scene>
+</body>
+
+</html>
