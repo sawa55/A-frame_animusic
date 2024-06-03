@@ -2,6 +2,7 @@
 
 <head>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-event-set-component/dist/aframe-event-set-component.min.js"></script>
     <script>
         AFRAME.registerComponent('audioanalyser', {
             schema: {
@@ -12,17 +13,16 @@
             init: function () {
                 var audioContext = this.el.sceneEl.audioListener.context;
                 var analyser = this.analyser = audioContext.createAnalyser();
-                analyser.fftSize = 256; // FFTサイズを設定
+                analyser.fftSize = 256;
                 this.data = new Uint8Array(analyser.frequencyBinCount);
                 console.log(this.el.dataset.scaleFactor)
-                // var scaleFactor = this.el.getAttribute('audioanalyser').scaleFactor;
 
                 var sound = this.el.components.sound;
                 if (sound && sound.loaded) {
                     console.log("true")
 
-                    var source = sound.pool.children[0].getOutput(); // soundコンポーネントからAudioNodeを取得
-                    source.connect(analyser); // AudioNodeをAnalyserNodeに接続
+                    var source = sound.pool.children[0].getOutput();
+                    source.connect(analyser);
                 } else {
                     console.log("false")
                     this.el.addEventListener('sound-loaded', () => {
@@ -37,9 +37,9 @@
                 var sum = this.data.reduce((a, b) => a + b, 0);
                 var average = sum / this.data.length;
                 var scaleFactor = this.schema.scaleFactor;
-                // console.log(this.schema)
 
-                var newScale = 1 + (average / 64) * this.el.dataset.scaleFactor; // 平均ボリュームに基づいてスケールを計算
+
+                var newScale = 1 + (average / 64) * this.el.dataset.scaleFactor;
                 this.el.setAttribute('scale', { x: newScale, y: newScale, z: newScale });
             }
 
@@ -47,39 +47,69 @@
     </script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            var textElement = document.getElementById('clickableText');
+            var textstopElement = document.getElementById('clickablestopText');
             var audioStarted = false;
-            document.addEventListener('keydown', function (event) {
-                if (event.key === 'c') {
-                    var scene = document.querySelector('a-scene');
-                    var myAudio = document.getElementById('myAudio');
-                    if (!audioStarted) {
-                        scene.audioListener.context.resume().then(() => {
-                            console.log('AudioContext activated');
-                            var soundComponents = document.querySelectorAll('[sound]');
-                            soundComponents.forEach(function (soundComponent) {
-                                soundComponent.components.sound.playSound();
-                            });
-                            myAudio.play();
-                            audioStarted = true;
+            var scene = document.querySelector('a-scene');
+            var myAudio = document.getElementById('myAudio');
+            textElement.addEventListener('click', function (event) {
+
+                if (!audioStarted) {
+                    scene.audioListener.context.resume().then(() => {
+                        var soundComponents = document.querySelectorAll('[sound]');
+                        soundComponents.forEach(function (soundComponent) {
+                            soundComponent.components.sound.playSound();
                         });
-                    }
+                        myAudio.play();
+                        audioStarted = true;
+                    });
                 }
+            });
+            textstopElement.addEventListener('click', function (event) {
+                if (audioStarted) {
+                    var soundComponents = document.querySelectorAll('[sound]');
+                    soundComponents.forEach(function (soundComponent) {
+                        soundComponent.components.sound.stopSound();
+                    });
+                    myAudio.pause();
+                    myAudio.currentTime = 0;
+                    audioStarted = false;
+                }
+
             });
         });
     </script>
 
+
 </head>
 
 <body>
-    <audio id="myAudio" src="Short.mp3" autoplay:true loop:true></audio>
+    <audio id="myAudio" src="Short.mp3" loop="true"></audio>
     <a-scene>
         <a-sky color="#ECECEC"></a-sky>
-        <a-box data-scale-factor="20" position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"
+        <a-box data-scale-factor="20" position="-4 0.5 -5" rotation="0 45 0" color="#4CC3D9"
             sound="src: url(bass.mp3); loop: true" audioanalyser="src: a-sound;"></a-box>
-        <a-box data-scale-factor="6" position="1 0.5 -6" rotation="0 45 0" color="#4CC3D9"
+        <a-box data-scale-factor="6" position="0 0.5 -5" rotation="0 45 0" color="#4CC3D9"
             sound="src: url(hat.mp3); loop: true" audioanalyser="src: a-sound;"></a-box>
-        <a-box data-scale-factor="12" position="1 0.5 3" rotation="0 45 0" color="#4CC3D9"
+        <a-box data-scale-factor="12" position="4 0.5 -5" rotation="0 45 0" color="#4CC3D9"
             sound="src: url(melody.mp3); loop: true" audioanalyser="src: a-sound;"></a-box>
+        <a-camera position="0 1.6 0">
+            <a-cursor></a-cursor>
+        </a-camera>
+        <a-entity id="clickableText" position="0 1 -2" scale="5 5 5"
+            text="value: Music will play when \nyou click on it.; color: #212121; width: 1;  align: center;"
+            geometry="primitive: plane; width: auto; height: auto;"
+            material="color: #DDDDDD; shader: flat; visible: true"
+            event-set__enter="_event: mouseenter; text.color: #FF0000"
+            event-set__leave="_event: mouseleave; text.color: #212121">
+        </a-entity>
+        <a-entity id="clickablestopText" position="0 3 -2" scale="5 5 5"
+            text="value: Stops the music.; color: #212121; width: 1;  align: center;"
+            geometry="primitive: plane; width: auto; height: auto;"
+            material="color: #DDDDDD; shader: flat; visible: true"
+            event-set__enter="_event: mouseenter; text.color: #FF0000"
+            event-set__leave="_event: mouseleave; text.color: #212121">
+        </a-entity>
     </a-scene>
 </body>
 
